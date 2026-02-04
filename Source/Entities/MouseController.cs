@@ -1,5 +1,6 @@
 ﻿using Celeste.Mod.CelesteNet.Client.Entities;
 using Celeste.Mod.Entities;
+using Celeste.Mod.UMH.ObjectTypes;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -18,8 +19,10 @@ public class MouseController : Entity
 {
     public MTexture birb;
     public PlacementController placement;
-    public Vector2? virtualCursorPos = null;
+    public Level level;
+    public Vector2 virtualCursorPos = new Vector2(1920 / 2, 1080 / 2);
     public Vector2? prevCursorPos = null;
+    public UMHManager manager;
 
     public MouseController()
         : base(new Vector2(1920f / 2f, 1080f / 2f))
@@ -28,58 +31,54 @@ public class MouseController : Entity
         Tag = Tags.HUD;
 
         placement = new PlacementController(Position);
+        placement.Active = true;
+        placement.mouse = this;
     }
 
     public override void Added(Scene scene)
     {
-        scene.Add(placement);
-        
         base.Added(scene);
+
+        scene.Add(placement);
+        level = SceneAs<Level>();
+
+        placement.holdingIndex = 0;
+        placement.holding = Pools.pools[manager.PoolIndex][placement.holdingIndex].Create();
+        scene.Add(placement.holding);
     }
 
     public override void Render()
     {
         birb.DrawCentered(Position, Color.White, 1f);
-        
+        foreach (Ghost remotePlayer in Engine.Scene.Tracker.GetEntities<Ghost>())
+        {
+            birb.DrawCentered(ToScreenspace(remotePlayer.Position), Color.Red, 1f);
+            Console.WriteLine(ToScreenspace(remotePlayer.Position));
+        }
+
         base.Render();
     }
 
-    bool placed = false;
     public override void Update()
     {
-        placement.Active = true;
-        placement.Visible = true;
+        MouseState state = Mouse.GetState();
+        Player plr = Engine.Scene.Tracker.GetEntity<Player>();
 
-        var plr = Engine.Scene.Tracker.GetEntity<Player>();
-        foreach (Ghost nplr in Engine.Scene.Tracker.GetEntities<Ghost>())
-            nplr.Visible = false;
-        Camera currentCam = null;
+        placement.Position = ToWorldspace(Position);
+
         if (plr != null)
         {
-            plr.StateMachine.State = 11;
+            plr.Position = ToWorldspace(Position);
+            plr.StateMachine.State = 23;
             plr.StateMachine.Locked = true;
             plr.level.CanRetry = false;
             plr.DummyGravity = false;
             plr.Position = placement.Position;
             plr.Visible = false;
-            //plr.level.InCutscene = true;
-            currentCam = plr.level.Camera;
-            Engine.Commands.Log($"freeze");
-        }
-        MouseState state = Mouse.GetState();
-
-        Engine.Commands.Log($"M X: {Position.X}, Y: {Position.Y}, wW: {Engine.ViewWidth}, wH: {Engine.ViewHeight}");
-        if (currentCam != null)
-        {
-            placement.Position.X = (float)Position.X / 1920f * currentCam.Viewport.Width / currentCam.zoom.X + currentCam.X;
-            placement.Position.Y = (float)Position.Y / 1080f * currentCam.Viewport.Height / currentCam.zoom.Y + currentCam.Y;
-            Engine.Commands.Log($"P X: {placement.Position.X}, Y: {placement.Position.Y}, wW: {currentCam.Viewport.Width}, wH: {currentCam.Viewport.Height}");
         }
 
         if (prevCursorPos == null)
             prevCursorPos = MInput.Mouse.Position;
-        if (virtualCursorPos == null)
-            virtualCursorPos = new Vector2(1920f/2f, 1080f/2f);
 
         if (prevCursorPos != MInput.Mouse.Position)
         {
@@ -89,51 +88,55 @@ public class MouseController : Entity
         else if (Input.Feather.value != Vector2.Zero)
         {
             virtualCursorPos += Input.Feather.value * 8;
-            Position = (Vector2)virtualCursorPos;
+            Position = virtualCursorPos;
         }
 
-        if (placement.holding == null)
+        if (placement.holding != null)
         {
-            if (!placed)
-            {
-                DreamBlock block = Engine.Scene.Tracker.GetEntity<DreamBlock>();
-                if (block != null)
-                {
-                    placement.holding = block;
-                }
-                else
-                {
-                    Engine.Commands.Log($"doesn't exist");
-                }
-                placed = true;
-            }
-        }
-        else
-        {
-            if (Input.Jump.Pressed/* || state.LeftButton == ButtonState.Pressed*/)
+            if (Input.Jump.Pressed || MInput.Mouse.CheckLeftButton)
             {
                 if (placement.Place())
                 {
-                    this.Active = false;
-                    this.Visible = false;
-                    placement.Active = false;
-                    placement.Visible = false;
-                    if (plr != null)
-                    {
-                        plr.level.InCutscene = false;
-                        plr.StateMachine.Locked = false;
-                        plr.StateMachine.State = 0;
-                        plr.level.CanRetry = true;
-                        plr.Visible = true;
-                        plr.DummyGravity = true;
-                        foreach (Ghost nplr in Engine.Scene.Tracker.GetEntities<Ghost>())
-                            nplr.Visible = true;
-                        Engine.Commands.Log($"freed");
-                    }
+                    SwitchToGameplay(plr);
                 }
             }
         }
 
+        foreach (Ghost nplr in Engine.Scene.Tracker.GetEntities<Ghost>())
+            nplr.Visible = false;
+
         base.Update();
+    }
+
+    private void SwitchToGameplay(Player plr)
+    {
+        plr.StateMachine.State = 0;
+        plr.StateMachine.Locked = false;
+        plr.level.CanRetry = true;
+        //plr.DummyGravity = true;
+        plr.Position = Engine.Scene.Tracker.GetEntity<UMHSpawn>().Position;
+        plr.Visible = true;
+
+        foreach (Ghost nplr in Engine.Scene.Tracker.GetEntities<Ghost>())
+            nplr.Visible = true;
+
+        this.Visible = false;
+        this.Active = false;
+    }
+
+    private Vector2 ToWorldspace(Vector2 screenPos)
+    {
+        return new Vector2(
+            (float)screenPos.X / 1920f * level.Camera.Viewport.Width / level.Camera.zoom.X + level.Camera.X,
+            (float)screenPos.Y / 1080f * level.Camera.Viewport.Height / level.Camera.zoom.Y + level.Camera.Y
+        );
+    }
+
+    private Vector2 ToScreenspace(Vector2 worldPos)
+    {
+        return new Vector2(
+            (worldPos.X - level.Camera.X) * level.Camera.zoom.X / level.Camera.Viewport.Width * 1920f,
+            (worldPos.Y - level.Camera.Y) * level.Camera.zoom.Y / level.Camera.Viewport.Height * 1080f
+        );
     }
 }

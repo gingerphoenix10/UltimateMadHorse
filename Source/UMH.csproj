@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
@@ -28,6 +28,7 @@
         <Reference Include="$(CelestePrefix)\FNA.dll" Private="false" />
 		<Reference Include="$(CelestePrefix)\Mods\CelesteNet.Client\CelesteNet.Client.dll" Private="false" />
 		<Reference Include="$(CelestePrefix)\Mods\CelesteNet.Client\CelesteNet.Shared.dll" Private="false" />
+		<Reference Include="$(CelestePrefix)\Mods\CNetHelper\bin\CNetHelper.dll" Private="false" />
     </ItemGroup>
 
     <Target Name="CopyFiles" AfterTargets="Build" Inputs="$(OutputPath)\$(AssemblyName).dll;$(OutputPath)\$(AssemblyName).pdb" Outputs="..\bin\$(AssemblyName).dll;..\bin\$(AssemblyName).pdb">

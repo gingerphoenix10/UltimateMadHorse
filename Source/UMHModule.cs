@@ -1,4 +1,9 @@
-﻿using System;
+﻿using Celeste.Mod.CNetHelper;
+using Celeste.Mod.CNetHelper.Data;
+using Celeste.Mod.UMH.Entities;
+using Celeste.Mod.UMH.Packets;
+using Monocle;
+using System;
 
 namespace Celeste.Mod.UMH;
 
@@ -13,23 +18,40 @@ public class UMHModule : EverestModule {
 
     public override Type SaveDataType => typeof(UMHModuleSaveData);
     public static UMHModuleSaveData SaveData => (UMHModuleSaveData) Instance._SaveData;
+    public static bool Invincible
+    {
+        get
+        {
+            UMHManager UMH = Engine.Scene.Tracker.GetEntity<UMHManager>();
+            if (UMH != null)
+                return UMH.mouse.Active;
+            return false;
+        }
+    }
 
     public UMHModule() {
         Instance = this;
-#if DEBUG
-        // debug builds use verbose logging
         Logger.SetLogLevel(nameof(UMHModule), LogLevel.Verbose);
-#else
-        // release builds use info logging to reduce spam in log files
-        Logger.SetLogLevel(nameof(UMHModule), LogLevel.Info);
-#endif
     }
 
-    public override void Load() {
-        // TODO: apply any hooks that should always be active
+    public override void Load()
+    {
+        On.Celeste.Player.Die += On_Death;
+        CNetHelperModule.RegisterType<ObjectPlace>(ObjectPlace.Receive);
+        CNetHelperModule.OnError += (CNetHelperError error) =>
+        {
+            Engine.Commands.Log($"ERROR: {error.errorType}");
+        };
+    }
+
+    private static PlayerDeadBody On_Death(On.Celeste.Player.orig_Die orig, Player self, Microsoft.Xna.Framework.Vector2 direction, bool evenIfInvincible, bool registerDeathInStats)
+    {
+        if (!Invincible)
+            return orig(self, direction, evenIfInvincible, registerDeathInStats);
+        return null;
     }
 
     public override void Unload() {
-        // TODO: unapply any hooks applied in Load()
+        On.Celeste.Player.Die -= On_Death;
     }
 }

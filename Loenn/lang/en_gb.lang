@@ -1,0 +1,9 @@
+# Overall
+mods.gingerphoenix10.name=gingerphoenix10
+mods.gingerphoenix10UMH.name=Ultimate Mad Horse
+
+# Mouse Controller
+entities.UMH/UMHManager.placements.name.default=Ultimate Mad Horse Controller
+
+# Spawn
+entities.UMH/UMHSpawn.placements.name.default=Ultimate Mad Horse Spawn

@@ -1,4 +1,6 @@
-﻿using Celeste.Mod.Entities;
+﻿using Celeste.Mod.CNetHelper;
+using Celeste.Mod.Entities;
+using Celeste.Mod.UMH.Packets;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -17,18 +19,12 @@ namespace Celeste.Mod.UMH.Entities;
 public class PlacementController : Entity
 {
     public Entity holding;
+    public int holdingIndex;
+    public MouseController mouse;
     public PlacementController(Vector2 pos)
         : base(pos)
     {
         base.Collider = new Hitbox(8f, 8f);
-
-        TalkComponent talker = new TalkComponent(new Rectangle(0, 0, 8, 8), new Vector2(-0.5f, -20f), Interact)
-        {
-            PlayerMustBeFacing = false
-        };
-        talker.Enabled = true;
-        talker.Visible = true;
-        Add(talker);
     }
 
     private void Interact(Player player)
@@ -61,7 +57,12 @@ public class PlacementController : Entity
     public bool Place()
     {
         if (holding != null)
+        {
             holding.Collidable = true;
+            var placemsg = new ObjectPlace(mouse.manager.PoolIndex, holdingIndex, (int)Math.Floor(Position.X / gridSize) * gridSize, (int)Math.Floor(Position.Y / gridSize) * gridSize);
+            CNetHelperModule.Send(placemsg, false);
+            Engine.Commands.Log(System.Text.Json.JsonSerializer.Serialize(placemsg));
+        }
         else return false;
 
         holding = null;
