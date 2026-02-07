@@ -18,6 +18,8 @@ public class ObjectPlace
     public int EntityID { get; set; } = -1;
     public int x { get; set; }
     public int y { get; set; }
+    public string map { get; set; }
+    public string room { get; set; }
 
     [JsonIgnore]
     public Entity _createdEntity = null;
@@ -31,7 +33,7 @@ public class ObjectPlace
                 UCHObject[] pool = Pools.pools[EntityPool];
                 UCHObject entity = pool[EntityID];
                 Entity newEntity = entity.Create();
-                newEntity.Position = new Vector2(x, y);
+                entity.MoveTo(newEntity, new Vector2(x, y));
                 _createdEntity = newEntity;
                 return newEntity;
             }
@@ -39,16 +41,20 @@ public class ObjectPlace
         }
     }
 
-    public ObjectPlace(int EntityPool, int EntityID, int x, int y)
+    public ObjectPlace(int EntityPool, int EntityID, int x, int y, string map, string room)
     {
         this.EntityPool = EntityPool;
         this.EntityID = EntityID;
         this.x = x;
         this.y = y;
+        this.map = map;
+        this.room = room;
     }
 
     public static void Receive(PlayerData playerInfo, ObjectPlace msg)
     {
+        if (UMHModule.currentMap != msg.map || UMHModule.currentRoom != msg.room)
+            return;
         Engine.Commands.Log($"Received new object placement");
         if (msg.CreatedEntity != null)
         {

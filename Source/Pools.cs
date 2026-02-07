@@ -11,7 +11,9 @@ namespace Celeste.Mod.UMH
     {
         readonly static UCHObject[] All = new UCHObject[]
         {
-            new UCHDreamBlock()
+            new UCHDreamBlock(),
+            new UCHTrafficBlock(),
+            new UCHDreamBlock(8, 2)
         };
 
         public readonly static List<UCHObject[]> pools = new()

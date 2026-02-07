@@ -19,7 +19,30 @@ namespace Celeste.Mod.UMH.Entities;
 public class PlacementController : Entity
 {
     public Entity holding;
-    public int holdingIndex;
+    private int _holdingIndex = -1;
+    public int HoldingIndex
+    {
+        get => _holdingIndex;
+        set
+        {
+            if (value != _holdingIndex)
+            {
+                if (holding != null)
+                {
+                    holding.RemoveSelf();
+                    holding = null;
+                }
+                if (value != -1)
+                {
+                    holding = Pools.pools[mouse.manager.PoolIndex][value].Create();
+                    if (Scene != null && holding != null)
+                        Scene.Add(holding);
+                }
+                _holdingIndex = value;
+            }
+        }
+    }
+
     public MouseController mouse;
     public PlacementController(Vector2 pos)
         : base(pos)
@@ -46,10 +69,10 @@ public class PlacementController : Entity
             return;
         }
 
-        holding.Position = new Vector2(
-            Position.X,// + holding.Width / 2f,
-            Position.Y// + holding.Height / 2f
-        );
+        Pools.pools[mouse.manager.PoolIndex][HoldingIndex].MoveTo(holding, new Vector2(
+            Position.X,
+            Position.Y
+        ));
 
         holding.Collidable = false;
     }
@@ -59,7 +82,7 @@ public class PlacementController : Entity
         if (holding != null)
         {
             holding.Collidable = true;
-            var placemsg = new ObjectPlace(mouse.manager.PoolIndex, holdingIndex, (int)Math.Floor(Position.X / gridSize) * gridSize, (int)Math.Floor(Position.Y / gridSize) * gridSize);
+            var placemsg = new ObjectPlace(mouse.manager.PoolIndex, HoldingIndex, (int)Math.Floor(Position.X / gridSize) * gridSize, (int)Math.Floor(Position.Y / gridSize) * gridSize, UMHModule.currentMap, UMHModule.currentRoom);
             CNetHelperModule.Send(placemsg, false);
             Engine.Commands.Log(System.Text.Json.JsonSerializer.Serialize(placemsg));
         }

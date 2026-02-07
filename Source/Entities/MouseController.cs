@@ -35,16 +35,18 @@ public class MouseController : Entity
         placement.mouse = this;
     }
 
-    public override void Added(Scene scene)
+    public async override void Added(Scene scene)
     {
         base.Added(scene);
 
-        scene.Add(placement);
         level = SceneAs<Level>();
 
-        placement.holdingIndex = 0;
-        placement.holding = Pools.pools[manager.PoolIndex][placement.holdingIndex].Create();
-        scene.Add(placement.holding);
+        scene.Add(placement);
+        placement.Scene = scene; //idk fixes error
+        placement.HoldingIndex = 0;
+        await Task.Delay(5000);
+        if (placement != null)
+            placement.HoldingIndex = 1;
     }
 
     public override void Render()
@@ -69,10 +71,11 @@ public class MouseController : Entity
         if (plr != null)
         {
             plr.Position = ToWorldspace(Position);
-            plr.StateMachine.State = 23;
+            plr.StateMachine.State = 11;
             plr.StateMachine.Locked = true;
             plr.level.CanRetry = false;
             plr.DummyGravity = false;
+            plr.Speed = Vector2.Zero;
             plr.Position = placement.Position;
             plr.Visible = false;
         }
@@ -98,6 +101,8 @@ public class MouseController : Entity
                 if (placement.Place())
                 {
                     SwitchToGameplay(plr);
+                    placement.RemoveSelf();
+                    placement = null;
                 }
             }
         }
@@ -110,10 +115,11 @@ public class MouseController : Entity
 
     private void SwitchToGameplay(Player plr)
     {
-        plr.StateMachine.State = 0;
         plr.StateMachine.Locked = false;
+        plr.StateMachine.State = 0;
         plr.level.CanRetry = true;
-        //plr.DummyGravity = true;
+        plr.DummyGravity = true;
+        plr.Speed = Vector2.Zero;
         plr.Position = Engine.Scene.Tracker.GetEntity<UMHSpawn>().Position;
         plr.Visible = true;
 

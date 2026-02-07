@@ -10,8 +10,15 @@ namespace Celeste.Mod.UMH.ObjectTypes;
 
 public class UCHDreamBlock : UCHObject
 {
+    public int width = 2;
+    public int height = 8;
+    public UCHDreamBlock(int width = 2, int height = 8)
+    {
+        this.width = width;
+        this.height = height;
+    }
     public override Entity Create()
     {
-        return new DreamBlock(Vector2.Zero, 8*2, 8*8, null, false, false);
+        return new DreamBlock(Vector2.Zero, width*8, height*8, null, false, false);
     }
 }

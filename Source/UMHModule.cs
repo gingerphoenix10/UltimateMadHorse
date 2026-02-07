@@ -2,6 +2,7 @@
 using Celeste.Mod.CNetHelper.Data;
 using Celeste.Mod.UMH.Entities;
 using Celeste.Mod.UMH.Packets;
+using Microsoft.Xna.Framework;
 using Monocle;
 using System;
 
@@ -10,14 +11,9 @@ namespace Celeste.Mod.UMH;
 public class UMHModule : EverestModule {
     public static UMHModule Instance { get; private set; }
 
-    public override Type SettingsType => typeof(UMHModuleSettings);
-    public static UMHModuleSettings Settings => (UMHModuleSettings) Instance._Settings;
+    public static string currentMap = "";
+    public static string currentRoom = ""; // Since we're checking for a UCHManager as well, this should be good enough for ensuring we're in the same level, same room
 
-    public override Type SessionType => typeof(UMHModuleSession);
-    public static UMHModuleSession Session => (UMHModuleSession) Instance._Session;
-
-    public override Type SaveDataType => typeof(UMHModuleSaveData);
-    public static UMHModuleSaveData SaveData => (UMHModuleSaveData) Instance._SaveData;
     public static bool Invincible
     {
         get
@@ -37,6 +33,8 @@ public class UMHModule : EverestModule {
     public override void Load()
     {
         On.Celeste.Player.Die += On_Death;
+        On.Celeste.Player.OnTransition += On_Transition;
+        On.Celeste.LevelLoader.StartLevel += On_StartLevel;
         CNetHelperModule.RegisterType<ObjectPlace>(ObjectPlace.Receive);
         CNetHelperModule.OnError += (CNetHelperError error) =>
         {
@@ -51,7 +49,24 @@ public class UMHModule : EverestModule {
         return null;
     }
 
-    public override void Unload() {
+    private static void On_Transition(On.Celeste.Player.orig_OnTransition orig, Player self)
+    {
+        currentMap = self.level.Session.Area.SID;
+        currentRoom = self.level.Session.Level;
+        orig(self);
+    }
+
+    private static void On_StartLevel(On.Celeste.LevelLoader.orig_StartLevel orig, LevelLoader self)
+    {
+        currentMap = self.Level.Session.Area.SID;
+        currentRoom = self.Level.Session.Level;
+        orig(self);
+    }
+
+    public override void Unload()
+    {
         On.Celeste.Player.Die -= On_Death;
+        On.Celeste.Player.OnTransition -= On_Transition;
+        On.Celeste.LevelLoader.StartLevel -= On_StartLevel;
     }
 }

@@ -23,12 +23,13 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="CelesteMod.Publicizer" Version="*" CelesteAssembly="$(CelestePrefix)\Celeste.dll" />
+		<PackageReference Include="CelesteMod.Publicizer" Version="*" CelesteAssembly="$(CelestePrefix)\Celeste.dll" />
         <Reference Include="$(CelestePrefix)\MMHOOK_Celeste.dll" Private="false" />
         <Reference Include="$(CelestePrefix)\FNA.dll" Private="false" />
 		<Reference Include="$(CelestePrefix)\Mods\CelesteNet.Client\CelesteNet.Client.dll" Private="false" />
 		<Reference Include="$(CelestePrefix)\Mods\CelesteNet.Client\CelesteNet.Shared.dll" Private="false" />
 		<Reference Include="$(CelestePrefix)\Mods\CNetHelper\bin\CNetHelper.dll" Private="false" />
+		<Reference Include="$(CelestePrefix)\Mods\CoopHelper\Code\CoopHelper.dll" Private="false" />
     </ItemGroup>
 
     <Target Name="CopyFiles" AfterTargets="Build" Inputs="$(OutputPath)\$(AssemblyName).dll;$(OutputPath)\$(AssemblyName).pdb" Outputs="..\bin\$(AssemblyName).dll;..\bin\$(AssemblyName).pdb">
