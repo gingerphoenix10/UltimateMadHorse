@@ -1,10 +1,13 @@
-﻿using Celeste.Mod.CNetHelper;
+﻿using Celeste.Mod.CelesteNet.Client.Entities;
+using Celeste.Mod.CNetHelper;
 using Celeste.Mod.CNetHelper.Data;
 using Celeste.Mod.UMH.Entities;
 using Celeste.Mod.UMH.Packets;
 using Microsoft.Xna.Framework;
 using Monocle;
+using MonoMod.RuntimeDetour;
 using System;
+using System.Reflection;
 
 namespace Celeste.Mod.UMH;
 
@@ -13,6 +16,7 @@ public class UMHModule : EverestModule {
 
     public static string currentMap = "";
     public static string currentRoom = ""; // Since we're checking for a UCHManager as well, this should be good enough for ensuring we're in the same level, same room
+    public static Hook interactHook; // Since we're checking for a UCHManager as well, this should be good enough for ensuring we're in the same level, same room
 
     public static bool Invincible
     {
@@ -35,11 +39,18 @@ public class UMHModule : EverestModule {
         On.Celeste.Player.Die += On_Death;
         On.Celeste.Player.OnTransition += On_Transition;
         On.Celeste.LevelLoader.StartLevel += On_StartLevel;
+        interactHook = new(typeof(Ghost).GetMethod(nameof(Ghost.OnPlayer)), GetType().GetMethod(nameof(On_GhostInteract), BindingFlags.NonPublic | BindingFlags.Instance), this);
         CNetHelperModule.RegisterType<ObjectPlace>(ObjectPlace.Receive);
         CNetHelperModule.OnError += (CNetHelperError error) =>
         {
             Engine.Commands.Log($"ERROR: {error.errorType}");
         };
+    }
+
+    private void On_GhostInteract(Action<Ghost, Player> orig, Ghost self, Player player)
+    {
+        Console.WriteLine(self.PlayerInfo.ID);
+        orig(self, player);
     }
 
     private static PlayerDeadBody On_Death(On.Celeste.Player.orig_Die orig, Player self, Microsoft.Xna.Framework.Vector2 direction, bool evenIfInvincible, bool registerDeathInStats)
