@@ -15,6 +15,7 @@ public class UMHManager : Entity
 {
     public MouseController mouse;
     public int PoolIndex = 0;
+    public static List<int> players = new();
 
     public UMHManager()
         : base(Vector2.Zero)

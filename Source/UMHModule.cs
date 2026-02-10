@@ -8,6 +8,9 @@ using Monocle;
 using MonoMod.RuntimeDetour;
 using System;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using static Celeste.GaussianBlur;
+using static Celeste.TrackSpinner;
 
 namespace Celeste.Mod.UMH;
 
@@ -39,8 +42,10 @@ public class UMHModule : EverestModule {
         On.Celeste.Player.Die += On_Death;
         On.Celeste.Player.OnTransition += On_Transition;
         On.Celeste.LevelLoader.StartLevel += On_StartLevel;
+        On.Celeste.PlayerDeadBody.End += On_DieEnd;
         interactHook = new(typeof(Ghost).GetMethod(nameof(Ghost.OnPlayer)), GetType().GetMethod(nameof(On_GhostInteract), BindingFlags.NonPublic | BindingFlags.Instance), this);
         CNetHelperModule.RegisterType<ObjectPlace>(ObjectPlace.Receive);
+        CNetHelperModule.RegisterType<MatchStart>(MatchStart.Receive);
         CNetHelperModule.OnError += (CNetHelperError error) =>
         {
             Engine.Commands.Log($"ERROR: {error.errorType}");
@@ -53,11 +58,87 @@ public class UMHModule : EverestModule {
         orig(self, player);
     }
 
+    private static void On_DieEnd(On.Celeste.PlayerDeadBody.orig_End orig, PlayerDeadBody self)
+    {
+        orig(self);
+        return;
+        var nothing = nameof(PlayerDeadBody.End);
+
+        if (!self.finished)
+        {
+            self.finished = true;
+            if (self.DeathAction == null)
+            {
+                self.DeathAction = () =>
+                {
+                    PlayerSpriteMode spriteMode = ((!self.SceneAs<Level>().Session.Inventory.Backpack) ? PlayerSpriteMode.MadelineNoBackpack : PlayerSpriteMode.Madeline);
+                    Player player = new((Vector2)self.SceneAs<Level>().StartPosition, spriteMode);
+                    player.IntroType = Player.IntroTypes.Respawn;
+                    self.Scene.Add(player);
+
+                    self.SceneAs<Level>().Entities.UpdateLists();
+                    foreach (EntityID key in self.SceneAs<Level>().Session.Keys)
+                    {
+                        self.SceneAs<Level>().Add(new Key(player, key));
+                    }
+                };
+            }
+        }
+    }
+
+    private static void Respawn()
+    {
+       
+    }
+
     private static PlayerDeadBody On_Death(On.Celeste.Player.orig_Die orig, Player self, Microsoft.Xna.Framework.Vector2 direction, bool evenIfInvincible, bool registerDeathInStats)
     {
-        if (!Invincible)
-            return orig(self, direction, evenIfInvincible, registerDeathInStats);
-        return null;
+        if (Invincible)
+            return null;
+
+        /*Session session = self.level.Session;
+        bool flag = !evenIfInvincible && SaveData.Instance.Assists.Invincible;
+        if (!self.Dead && !flag && self.StateMachine.State != 18)
+        {
+            self.Stop(self.wallSlideSfx);
+            if (registerDeathInStats)
+            {
+                session.Deaths++;
+                session.DeathsInCurrentLevel++;
+                SaveData.Instance.AddDeath(session.Area);
+            }
+
+            Strawberry goldenStrawb = null;
+            foreach (Follower follower in self.Leader.Followers)
+            {
+                if (follower.Entity is Strawberry && (follower.Entity as Strawberry).Golden && !(follower.Entity as Strawberry).Winged)
+                {
+                    goldenStrawb = follower.Entity as Strawberry;
+                }
+            }
+
+            self.Dead = true;
+            self.Leader.LoseFollowers();
+            self.Depth = -1000000;
+            self.Speed = Vector2.Zero;
+            self.StateMachine.Locked = true;
+            self.Collidable = false;
+            self.Drop();
+            if (self.LastBooster != null)
+            {
+                self.LastBooster.PlayerDied();
+            }
+
+            self.level.InCutscene = false;
+            self.level.Shake();
+            Input.Rumble(RumbleStrength.Light, RumbleLength.Medium);
+            PlayerDeadBody playerDeadBody = new PlayerDeadBody(self, direction);
+            return playerDeadBody;
+        }
+
+        return null;*/
+
+        return orig(self, direction, evenIfInvincible, registerDeathInStats);
     }
 
     private static void On_Transition(On.Celeste.Player.orig_OnTransition orig, Player self)

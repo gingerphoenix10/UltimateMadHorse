@@ -30,9 +30,8 @@ public class MouseController : Entity
         birb = GFX.Game["birb"];
         Tag = Tags.HUD;
 
-        placement = new PlacementController(Position);
+        placement = new PlacementController(Position, this);
         placement.Active = true;
-        placement.mouse = this;
     }
 
     public async override void Added(Scene scene)
@@ -66,17 +65,18 @@ public class MouseController : Entity
         MouseState state = Mouse.GetState();
         Player plr = Engine.Scene.Tracker.GetEntity<Player>();
 
-        placement.Position = ToWorldspace(Position);
+        if (placement != null)
+            placement.Position = ToWorldspace(Position);
 
         if (plr != null)
         {
             plr.Position = ToWorldspace(Position);
-            plr.StateMachine.State = 11;
+            plr.StateMachine.State = 23;
             plr.StateMachine.Locked = true;
             plr.level.CanRetry = false;
             plr.DummyGravity = false;
             plr.Speed = Vector2.Zero;
-            plr.Position = placement.Position;
+            plr.Position = ToWorldspace(Position);
             plr.Visible = false;
         }
 
@@ -94,9 +94,9 @@ public class MouseController : Entity
             Position = virtualCursorPos;
         }
 
-        if (placement.holding != null)
+        if (Input.Jump.Pressed || MInput.Mouse.CheckLeftButton)
         {
-            if (Input.Jump.Pressed || MInput.Mouse.CheckLeftButton)
+            if (placement != null && placement.holding != null)
             {
                 if (placement.Place())
                 {

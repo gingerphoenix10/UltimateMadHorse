@@ -44,10 +44,11 @@ public class PlacementController : Entity
     }
 
     public MouseController mouse;
-    public PlacementController(Vector2 pos)
+    public PlacementController(Vector2 pos, MouseController mouse)
         : base(pos)
     {
         base.Collider = new Hitbox(8f, 8f);
+        this.mouse = mouse;
     }
 
     private void Interact(Player player)

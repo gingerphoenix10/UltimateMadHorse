@@ -4,7 +4,15 @@ UMHStartZone.name = "UMH/UMHStartZone"
 UMHStartZone.placements = {
     {
         name = "default",
-        data = {}
+        data = {
+            room = "arena"
+        }
+    }
+}
+UMHStartZone.fieldInformation = {
+    room = {
+        fieldType = "string",
+        default = "arena"
     }
 }
 
