@@ -1,4 +1,5 @@
-﻿using Celeste.Mod.Entities;
+﻿using Celeste.Mod.CelesteNet.Client.Entities;
+using Celeste.Mod.Entities;
 using Microsoft.Xna.Framework;
 using Monocle;
 using System;
@@ -15,7 +16,8 @@ public class UMHManager : Entity
 {
     public MouseController mouse;
     public int PoolIndex = 0;
-    public static List<int> players = new();
+    public static List<uint> players = new();
+    public static int matchID = -1;
 
     public UMHManager()
         : base(Vector2.Zero)
@@ -30,8 +32,23 @@ public class UMHManager : Entity
         base.Added(scene);
     }
 
+    public override void Update()
+    {
+        if (matchID == -1)
+            return;
+        foreach (Ghost ghost in Scene.Tracker.GetEntities<Ghost>())
+        {
+            if (!players.Contains(ghost.PlayerInfo.ID))
+            {
+                ghost.RemoveSelf();
+            }
+        }
+        base.Update();
+    }
+
     public void NewRemoteObject(Entity remoteObject)
     {
         Scene.Add(remoteObject);
     }
+
 }

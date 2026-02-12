@@ -1,4 +1,7 @@
-﻿using Celeste.Mod.CNetHelper.Data;
+﻿using Celeste.Mod.CelesteNet.Client;
+using Celeste.Mod.CelesteNet.Client.Components;
+using Celeste.Mod.CNetHelper;
+using Celeste.Mod.CNetHelper.Data;
 using Celeste.Mod.UMH.Entities;
 using Celeste.Mod.UMH.ObjectTypes;
 using Celeste.Mod.UMH.Triggers;
@@ -44,15 +47,27 @@ public class MatchStart
         if (zone == null)
             return;
 
-        Player plr = zone.Scene.Tracker.GetEntity<Player>();
-        if (plr != null)
-        {
-            plr.Position = zone.Position;
-        }
-
         if (zone.PlayerIsInside)
         {
-            
+            /*CelesteNetClientModule clientModule = null;
+            foreach (EverestModule module in Everest.Modules)
+            {
+                if (module is CelesteNetClientModule)
+                {
+                    clientModule = (CelesteNetClientModule)module;
+                    break;
+                }
+            }
+            if (clientModule == null)
+                return;*/
+            UMHManager.players = new() { playerInfo.ID/*, clientModule.Context.Main*/ };
+            Session ses = zone.SceneAs<Level>().Session;
+            AreaData.Get(ses).DoScreenWipe(zone.Scene, false, () => {
+                ses.Level = zone.arenaName;
+                Celeste.Scene = new LevelLoader(ses);
+            });
+            MatchJoin joinMessage = new(msg.matchID, UMHModule.currentMap, UMHModule.currentRoom);
+            CNetHelperModule.Send(joinMessage, false);
         }
 
     }

@@ -1,4 +1,7 @@
-﻿using Celeste.Mod.CelesteNet.Client.Entities;
+﻿using Celeste.Mod.CelesteNet;
+using Celeste.Mod.CelesteNet.Client.Components;
+using Celeste.Mod.CelesteNet.Client.Entities;
+using Celeste.Mod.CelesteNet.DataTypes;
 using Celeste.Mod.CNetHelper;
 using Celeste.Mod.CNetHelper.Data;
 using Celeste.Mod.UMH.Entities;
@@ -20,6 +23,8 @@ public class UMHModule : EverestModule {
     public static string currentMap = "";
     public static string currentRoom = ""; // Since we're checking for a UCHManager as well, this should be good enough for ensuring we're in the same level, same room
     public static Hook interactHook; // Since we're checking for a UCHManager as well, this should be good enough for ensuring we're in the same level, same room
+    public static Hook ghostHandleGraphicsHook;
+    public static Hook ghostHandleDataHook;
 
     public static bool Invincible
     {
@@ -44,8 +49,11 @@ public class UMHModule : EverestModule {
         On.Celeste.LevelLoader.StartLevel += On_StartLevel;
         On.Celeste.PlayerDeadBody.End += On_DieEnd;
         interactHook = new(typeof(Ghost).GetMethod(nameof(Ghost.OnPlayer)), GetType().GetMethod(nameof(On_GhostInteract), BindingFlags.NonPublic | BindingFlags.Instance), this);
+        ghostHandleGraphicsHook = new(typeof(CelesteNetMainComponent).GetMethod(nameof(CelesteNetMainComponent.Handle), new Type[] { typeof(CelesteNetConnection), typeof(DataPlayerGraphics) }), GetType().GetMethod(nameof(On_GhostHandleGraphics), BindingFlags.NonPublic | BindingFlags.Instance), this);
+        ghostHandleDataHook = new(typeof(CelesteNetMainComponent).GetMethod(nameof(CelesteNetMainComponent.Handle), new Type[] { typeof(CelesteNetConnection), typeof(DataPlayerFrame) }), GetType().GetMethod(nameof(On_GhostHandleData), BindingFlags.NonPublic | BindingFlags.Instance), this);
         CNetHelperModule.RegisterType<ObjectPlace>(ObjectPlace.Receive);
         CNetHelperModule.RegisterType<MatchStart>(MatchStart.Receive);
+        CNetHelperModule.RegisterType<MatchJoin>(MatchJoin.Receive);
         CNetHelperModule.OnError += (CNetHelperError error) =>
         {
             Engine.Commands.Log($"ERROR: {error.errorType}");
@@ -56,6 +64,22 @@ public class UMHModule : EverestModule {
     {
         Console.WriteLine(self.PlayerInfo.ID);
         orig(self, player);
+    }
+
+    private void On_GhostHandleData(Action<CelesteNetMainComponent, CelesteNetConnection, DataPlayerFrame> orig, CelesteNetMainComponent self, CelesteNetConnection con, DataPlayerFrame frame)
+    {
+        if (UMHManager.matchID != -1 && !UMHManager.players.Contains(frame.Player.ID))
+                return;
+
+        orig(self, con, frame);
+    }
+
+    private void On_GhostHandleGraphics(Action<CelesteNetMainComponent, CelesteNetConnection, DataPlayerGraphics> orig, CelesteNetMainComponent self, CelesteNetConnection con, DataPlayerGraphics graphics)
+    {
+        if (UMHManager.matchID != -1 && !UMHManager.players.Contains(graphics.Player.ID))
+            return;
+
+        orig(self, con, graphics);
     }
 
     private static void On_DieEnd(On.Celeste.PlayerDeadBody.orig_End orig, PlayerDeadBody self)

@@ -31,8 +31,8 @@ public class StartMatchButton : DashSwitch
         base.Update();
         if (pressed)
         {
-
-            var startmsg = new MatchStart(Calc.Random.Next(int.MaxValue), trigger.StartID, UMHModule.currentMap, UMHModule.currentRoom);
+            UMHManager.matchID = Calc.Random.Next(int.MaxValue);
+            var startmsg = new MatchStart(UMHManager.matchID, trigger.StartID, UMHModule.currentMap, UMHModule.currentRoom);
             CNetHelperModule.Send(startmsg, false);
 
             Session ses = SceneAs<Level>().Session;
