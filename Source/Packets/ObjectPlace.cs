@@ -53,7 +53,7 @@ public class ObjectPlace
 
     public static void Receive(PlayerData playerInfo, ObjectPlace msg)
     {
-        if (UMHModule.currentMap != msg.map || UMHModule.currentRoom != msg.room)
+        if (UMHModule.currentMap != msg.map || UMHModule.currentRoom != msg.room || !UMHManager.players.Contains(playerInfo.ID))
             return;
         Engine.Commands.Log($"Received new object placement");
         if (msg.CreatedEntity != null)

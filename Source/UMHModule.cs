@@ -1,4 +1,5 @@
 ﻿using Celeste.Mod.CelesteNet;
+using Celeste.Mod.CelesteNet.Client;
 using Celeste.Mod.CelesteNet.Client.Components;
 using Celeste.Mod.CelesteNet.Client.Entities;
 using Celeste.Mod.CelesteNet.DataTypes;
@@ -10,8 +11,10 @@ using Microsoft.Xna.Framework;
 using Monocle;
 using MonoMod.RuntimeDetour;
 using System;
+using System.Collections;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using static Celeste.GaussianBlur;
 using static Celeste.TrackSpinner;
 
@@ -42,22 +45,43 @@ public class UMHModule : EverestModule {
         Logger.SetLogLevel(nameof(UMHModule), LogLevel.Verbose);
     }
 
-    public override void Load()
+    public override async void Load()
     {
         On.Celeste.Player.Die += On_Death;
         On.Celeste.Player.OnTransition += On_Transition;
         On.Celeste.LevelLoader.StartLevel += On_StartLevel;
         On.Celeste.PlayerDeadBody.End += On_DieEnd;
+        On.Celeste.OuiTitleScreen.ctor += On_Start;
+        On.Monocle.EntityList.Render += On_EntityRender;
         interactHook = new(typeof(Ghost).GetMethod(nameof(Ghost.OnPlayer)), GetType().GetMethod(nameof(On_GhostInteract), BindingFlags.NonPublic | BindingFlags.Instance), this);
         ghostHandleGraphicsHook = new(typeof(CelesteNetMainComponent).GetMethod(nameof(CelesteNetMainComponent.Handle), new Type[] { typeof(CelesteNetConnection), typeof(DataPlayerGraphics) }), GetType().GetMethod(nameof(On_GhostHandleGraphics), BindingFlags.NonPublic | BindingFlags.Instance), this);
         ghostHandleDataHook = new(typeof(CelesteNetMainComponent).GetMethod(nameof(CelesteNetMainComponent.Handle), new Type[] { typeof(CelesteNetConnection), typeof(DataPlayerFrame) }), GetType().GetMethod(nameof(On_GhostHandleData), BindingFlags.NonPublic | BindingFlags.Instance), this);
         CNetHelperModule.RegisterType<ObjectPlace>(ObjectPlace.Receive);
         CNetHelperModule.RegisterType<MatchStart>(MatchStart.Receive);
         CNetHelperModule.RegisterType<MatchJoin>(MatchJoin.Receive);
+        CNetHelperModule.RegisterType<MatchLeave>(MatchLeave.Receive);
         CNetHelperModule.OnError += (CNetHelperError error) =>
         {
             Engine.Commands.Log($"ERROR: {error.errorType}");
         };
+        //nameof(OuiTitleScreen.Enter)
+    }
+
+    private static void On_Start(On.Celeste.OuiTitleScreen.orig_ctor orig, OuiTitleScreen self)
+    {
+        orig(self);
+        CelesteNetClientModule.Instance.Start();
+    }
+
+    private static void On_EntityRender(On.Monocle.EntityList.orig_Render orig, EntityList self)
+    {
+        //orig(self);
+        /*foreach (Entity entity in self.entities)
+        {
+            if (entity.Visible && entity is ItemsBox)
+                entity.Render();
+        }*/
+        GameLoader
     }
 
     private void On_GhostInteract(Action<Ghost, Player> orig, Ghost self, Player player)

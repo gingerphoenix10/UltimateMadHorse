@@ -32,6 +32,7 @@ public class StartMatchButton : DashSwitch
         if (pressed)
         {
             UMHManager.matchID = Calc.Random.Next(int.MaxValue);
+            Console.WriteLine($"Hosting match {UMHManager.matchID}");
             var startmsg = new MatchStart(UMHManager.matchID, trigger.StartID, UMHModule.currentMap, UMHModule.currentRoom);
             CNetHelperModule.Send(startmsg, false);
 

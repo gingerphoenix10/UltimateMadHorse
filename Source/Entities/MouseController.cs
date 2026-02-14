@@ -24,9 +24,10 @@ public class MouseController : Entity
     public Vector2? prevCursorPos = null;
     public UMHManager manager;
 
-    public MouseController()
+    public MouseController(UMHManager manager)
         : base(new Vector2(1920f / 2f, 1080f / 2f))
     {
+        this.manager = manager;
         birb = GFX.Game["birb"];
         Tag = Tags.HUD;
 
@@ -52,10 +53,7 @@ public class MouseController : Entity
     {
         birb.DrawCentered(Position, Color.White, 1f);
         foreach (Ghost remotePlayer in Engine.Scene.Tracker.GetEntities<Ghost>())
-        {
             birb.DrawCentered(ToScreenspace(remotePlayer.Position), Color.Red, 1f);
-            Console.WriteLine(ToScreenspace(remotePlayer.Position));
-        }
 
         base.Render();
     }

@@ -28,11 +28,11 @@ public class MatchJoin
 
     public static void Receive(PlayerData playerInfo, MatchJoin msg)
     {
-        if (msg.map != UMHModule.currentMap)
+        if (msg.map != UMHModule.currentMap || UMHManager.matchID != msg.matchID)
             return;
-        if (msg.matchID == -1)
+        if (msg.matchID < 0)
         {
-            Logger.Log("MatchJoin", "lmaoo someone tried to start a match on id -1");
+            Console.WriteLine("lmaoo someone tried to start a match on id -1");
             return;
         }
         if (!UMHManager.players.Contains(playerInfo.ID))

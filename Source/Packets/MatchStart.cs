@@ -60,6 +60,7 @@ public class MatchStart
             }
             if (clientModule == null)
                 return;*/
+            UMHManager.matchID = msg.matchID;
             UMHManager.players = new() { playerInfo.ID/*, clientModule.Context.Main*/ };
             Session ses = zone.SceneAs<Level>().Session;
             AreaData.Get(ses).DoScreenWipe(zone.Scene, false, () => {
@@ -68,6 +69,7 @@ public class MatchStart
             });
             MatchJoin joinMessage = new(msg.matchID, UMHModule.currentMap, UMHModule.currentRoom);
             CNetHelperModule.Send(joinMessage, false);
+            Console.WriteLine($"Connecting to match {UMHManager.matchID}");
         }
 
     }
