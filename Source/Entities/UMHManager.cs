@@ -5,7 +5,9 @@ using Celeste.Mod.UMH.Packets;
 using Microsoft.Xna.Framework;
 using Monocle;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,6 +19,7 @@ namespace Celeste.Mod.UMH.Entities;
 public class UMHManager : Entity
 {
     public MouseController mouse;
+    public ItemsBox box;
     public int PoolIndex = 0;
 
     public enum MatchStates
@@ -25,14 +28,14 @@ public class UMHManager : Entity
         EditMode,
         PlayMode
     }
-    public MatchStates matchState;
+    public MatchStates matchState = MatchStates.PickItems;
     public int roundNumber = 1;
     public int itemsPerRound
     {
         get
         {
             int playerCount = players.Count + 1;
-            return Math.Max(4, playerCount + 1);
+            return Math.Max(5, playerCount + 1);
         }
     }
 
@@ -43,6 +46,8 @@ public class UMHManager : Entity
         : base(Vector2.Zero)
     {
         mouse = new(this);
+        mouse.Visible = false;
+
     }
 
     public override async void Added(Scene scene)
@@ -50,7 +55,8 @@ public class UMHManager : Entity
         scene.Add(mouse);
         base.Added(scene);
         await Task.Delay(1000);
-        scene.Add(new ItemsBox(this));
+        scene.Add(box = new ItemsBox(this));
+        mouse.Visible = true;
     }
 
     public override void Update()
@@ -116,4 +122,16 @@ public class UMHManager : Entity
         }
     }
 
+    public void CheckForEditMode()
+    {
+        if (matchState != MatchStates.PickItems)
+            return;
+        if (mouse.picked.Count == players.Count && !mouse.localVisible)
+        {
+            box.RemoveSelf();
+            mouse.localVisible = true;
+            mouse.picked.Clear();
+            matchState = MatchStates.EditMode;
+        }
+    }
 }

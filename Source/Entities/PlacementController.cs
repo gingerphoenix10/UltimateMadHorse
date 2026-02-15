@@ -8,6 +8,7 @@ using Monocle;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -35,6 +36,10 @@ public class PlacementController : Entity
                 if (value != -1)
                 {
                     holding = Pools.pools[mouse.manager.PoolIndex][value].Create();
+                    if (Scene == null)
+                        Console.WriteLine("Bad 1");
+                    if (holding == null)
+                        Console.WriteLine("Bad 2");
                     if (Scene != null && holding != null)
                         Scene.Add(holding);
                 }
@@ -44,16 +49,11 @@ public class PlacementController : Entity
     }
 
     public MouseController mouse;
-    public PlacementController(Vector2 pos, MouseController mouse)
-        : base(pos)
+    public PlacementController(MouseController mouse)
+        : base(mouse.Position)
     {
         base.Collider = new Hitbox(8f, 8f);
         this.mouse = mouse;
-    }
-
-    private void Interact(Player player)
-    {
-        //Celeste.Instance.Exit();
     }
 
     const int gridSize = 8;
@@ -63,10 +63,12 @@ public class PlacementController : Entity
             (float)Math.Floor(Position.X / gridSize) * gridSize, 
             (float)Math.Floor(Position.Y / gridSize) * gridSize
         );
+        Visible = mouse.localVisible;
 
         if (holding == null)
         {
             base.Update();
+            Console.WriteLine("Holding is null");
             return;
         }
 
@@ -76,6 +78,7 @@ public class PlacementController : Entity
         ));
 
         holding.Collidable = false;
+        holding.Visible = Visible;
     }
 
     public bool Place()

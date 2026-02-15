@@ -52,7 +52,7 @@ public class UMHModule : EverestModule {
         On.Celeste.LevelLoader.StartLevel += On_StartLevel;
         On.Celeste.PlayerDeadBody.End += On_DieEnd;
         On.Celeste.OuiTitleScreen.ctor += On_Start;
-        On.Monocle.EntityList.Render += On_EntityRender;
+        //On.Monocle.EntityList.Render += On_EntityRender;
         interactHook = new(typeof(Ghost).GetMethod(nameof(Ghost.OnPlayer)), GetType().GetMethod(nameof(On_GhostInteract), BindingFlags.NonPublic | BindingFlags.Instance), this);
         ghostHandleGraphicsHook = new(typeof(CelesteNetMainComponent).GetMethod(nameof(CelesteNetMainComponent.Handle), new Type[] { typeof(CelesteNetConnection), typeof(DataPlayerGraphics) }), GetType().GetMethod(nameof(On_GhostHandleGraphics), BindingFlags.NonPublic | BindingFlags.Instance), this);
         ghostHandleDataHook = new(typeof(CelesteNetMainComponent).GetMethod(nameof(CelesteNetMainComponent.Handle), new Type[] { typeof(CelesteNetConnection), typeof(DataPlayerFrame) }), GetType().GetMethod(nameof(On_GhostHandleData), BindingFlags.NonPublic | BindingFlags.Instance), this);
@@ -60,6 +60,7 @@ public class UMHModule : EverestModule {
         CNetHelperModule.RegisterType<MatchStart>(MatchStart.Receive);
         CNetHelperModule.RegisterType<MatchJoin>(MatchJoin.Receive);
         CNetHelperModule.RegisterType<MatchLeave>(MatchLeave.Receive);
+        CNetHelperModule.RegisterType<ObjectPick>(ObjectPick.Receive);
         CNetHelperModule.OnError += (CNetHelperError error) =>
         {
             Engine.Commands.Log($"ERROR: {error.errorType}");
@@ -75,13 +76,12 @@ public class UMHModule : EverestModule {
 
     private static void On_EntityRender(On.Monocle.EntityList.orig_Render orig, EntityList self)
     {
-        //orig(self);
+        orig(self);
         /*foreach (Entity entity in self.entities)
         {
             if (entity.Visible && entity is ItemsBox)
                 entity.Render();
         }*/
-        GameLoader
     }
 
     private void On_GhostInteract(Action<Ghost, Player> orig, Ghost self, Player player)

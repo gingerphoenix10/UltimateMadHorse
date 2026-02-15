@@ -91,6 +91,7 @@ public class MoveableZipMover : Solid, ISynchronizable
 
         public override void Render()
         {
+            Visible = zipMover.Visible;
             from = this.zipMover.start + new Vector2(this.zipMover.Width / 2f, this.zipMover.Height / 2f);
             to = this.zipMover.start + this.zipMover.target + new Vector2(this.zipMover.Width / 2f, this.zipMover.Height / 2f);
             DrawCogs(Vector2.UnitY, Color.Black);
@@ -231,6 +232,7 @@ public class MoveableZipMover : Solid, ISynchronizable
     {
         base.Update();
         bloom.Y = streetlight.CurrentAnimationFrame * 3;
+        bloom.Visible = Visible;
     }
 
     public override void Render()
