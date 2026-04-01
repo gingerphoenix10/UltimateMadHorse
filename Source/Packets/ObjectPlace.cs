@@ -2,6 +2,7 @@
 using Celeste.Mod.UMH.Entities;
 using Celeste.Mod.UMH.ObjectTypes;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using Monocle;
 using System;
 using System.Collections.Generic;
@@ -41,27 +42,26 @@ public class ObjectPlace
         }
     }
 
-    public ObjectPlace(int EntityPool, int EntityID, int x, int y, string map, string room)
+    public ObjectPlace(int x, int y)
     {
-        this.EntityPool = EntityPool;
-        this.EntityID = EntityID;
         this.x = x;
         this.y = y;
-        this.map = map;
-        this.room = room;
     }
 
     public static void Receive(PlayerData playerInfo, ObjectPlace msg)
     {
-        if (UMHModule.currentMap != msg.map || UMHModule.currentRoom != msg.room || !UMHManager.players.Contains(playerInfo.ID))
+        if (!UMHManager.players.Contains(playerInfo.ID))
             return;
-        Engine.Commands.Log($"Received new object placement");
-        if (msg.CreatedEntity != null)
+        UMHManager manager = Engine.Scene.Tracker.GetEntity<UMHManager>();
+        if (manager.mouse.remotePlacements.TryGetValue(playerInfo.ID, out PlacementController placement))
         {
-            Engine.Commands.Log($"Created entity from pool {msg.EntityPool} with ID {msg.EntityID} at position ({msg.x}, {msg.y})");
-            var manager = Engine.Scene.Tracker.GetEntity<UMHManager>();
-            if (manager != null)
-                manager.NewRemoteObject(msg.CreatedEntity);
+            if (placement.Place(new Vector2(msg.x, msg.y)))
+            {
+                manager.mouse.placed.Add(playerInfo.ID);
+                placement.RemoveSelf();
+                manager.mouse.remotePlacements[playerInfo.ID] = null;
+                manager.CheckForPlayMode();
+            }
         }
     }
 }

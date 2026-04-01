@@ -8,6 +8,7 @@ using Celeste.Mod.CNetHelper.Data;
 using Celeste.Mod.UMH.Entities;
 using Celeste.Mod.UMH.Packets;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Monocle;
 using MonoMod.RuntimeDetour;
 using System;
@@ -49,6 +50,7 @@ public class UMHModule : EverestModule {
     {
         On.Celeste.Player.Die += On_Death;
         On.Celeste.Player.OnTransition += On_Transition;
+        On.Celeste.Player.Render += On_Player_Render;
         On.Celeste.LevelLoader.StartLevel += On_StartLevel;
         On.Celeste.PlayerDeadBody.End += On_DieEnd;
         On.Celeste.OuiTitleScreen.ctor += On_Start;
@@ -86,7 +88,7 @@ public class UMHModule : EverestModule {
 
     private void On_GhostInteract(Action<Ghost, Player> orig, Ghost self, Player player)
     {
-        Console.WriteLine(self.PlayerInfo.ID);
+        //Console.WriteLine(self.PlayerInfo.ID);
         orig(self, player);
     }
 
@@ -144,47 +146,16 @@ public class UMHModule : EverestModule {
         if (Invincible)
             return null;
 
-        /*Session session = self.level.Session;
-        bool flag = !evenIfInvincible && SaveData.Instance.Assists.Invincible;
-        if (!self.Dead && !flag && self.StateMachine.State != 18)
+        var manager = self.Scene.Tracker.GetEntity<UMHManager>();
+        if (manager != null)
         {
-            self.Stop(self.wallSlideSfx);
-            if (registerDeathInStats)
+            if (self.Scene.Tracker.GetEntity<FakeDeadBody>() == null)
             {
-                session.Deaths++;
-                session.DeathsInCurrentLevel++;
-                SaveData.Instance.AddDeath(session.Area);
+                FakeDeadBody body = new(self, Vector2.Zero);
+                self.Scene.Add(body);
             }
-
-            Strawberry goldenStrawb = null;
-            foreach (Follower follower in self.Leader.Followers)
-            {
-                if (follower.Entity is Strawberry && (follower.Entity as Strawberry).Golden && !(follower.Entity as Strawberry).Winged)
-                {
-                    goldenStrawb = follower.Entity as Strawberry;
-                }
-            }
-
-            self.Dead = true;
-            self.Leader.LoseFollowers();
-            self.Depth = -1000000;
-            self.Speed = Vector2.Zero;
-            self.StateMachine.Locked = true;
-            self.Collidable = false;
-            self.Drop();
-            if (self.LastBooster != null)
-            {
-                self.LastBooster.PlayerDied();
-            }
-
-            self.level.InCutscene = false;
-            self.level.Shake();
-            Input.Rumble(RumbleStrength.Light, RumbleLength.Medium);
-            PlayerDeadBody playerDeadBody = new PlayerDeadBody(self, direction);
-            return playerDeadBody;
+            return null;
         }
-
-        return null;*/
 
         return orig(self, direction, evenIfInvincible, registerDeathInStats);
     }
@@ -208,5 +179,82 @@ public class UMHModule : EverestModule {
         On.Celeste.Player.Die -= On_Death;
         On.Celeste.Player.OnTransition -= On_Transition;
         On.Celeste.LevelLoader.StartLevel -= On_StartLevel;
+    }
+
+    private static void On_Player_Render(On.Celeste.Player.orig_Render orig, Player self)
+    {
+        if (SaveData.Instance.Assists.InvisibleMotion && self.InControl && ((!self.onGround && self.StateMachine.State != 1 && self.StateMachine.State != 3) || self.Speed.LengthSquared() > 800f))
+        {
+            return;
+        }
+
+        Vector2 renderPosition = self.Sprite.RenderPosition;
+        self.Sprite.RenderPosition = self.Sprite.RenderPosition.Floor();
+        if (self.StateMachine.State == 14)
+        {
+            DeathEffect.Draw(self.Center + self.deadOffset, self.Hair.Color, self.introEase);
+        }
+        else
+        {
+            if (self.StateMachine.State != 19)
+            {
+                if (self.IsTired && self.flash)
+                {
+                    self.Sprite.Color = Color.Red;
+                }
+                else
+                {
+                    self.Sprite.Color = Color.White;
+                }
+            }
+
+            var manager = self.Scene.Tracker.GetEntity<UMHManager>();
+            if (manager != null && manager.dead)
+            {
+                self.Sprite.Color = Color.Red * 0.5f;
+                self.Hair.Alpha = 0.5f;
+                self.ForceCameraUpdate = true;
+                if (self.Top > ((float)self.SceneAs<Level>().Bounds.Bottom+4))
+                {
+                    self.Visible = false;
+                    self.Ac = false;
+                    self.ForceCameraUpdate = false;
+                    return;
+                }
+            }
+
+            if (self.reflection.IsRendering && self.FlipInReflection)
+            {
+                self.Facing = (Facings)(0 - self.Facing);
+                self.Hair.Facing = self.Facing;
+            }
+
+            self.Sprite.Scale.X *= (float)self.Facing;
+            if (self.sweatSprite.LastAnimationID == "idle")
+            {
+                self.sweatSprite.Scale = self.Sprite.Scale;
+            }
+            else
+            {
+                self.sweatSprite.Scale.Y = self.Sprite.Scale.Y;
+                self.sweatSprite.Scale.X = Math.Abs(self.Sprite.Scale.X) * (float)Math.Sign(self.sweatSprite.Scale.X);
+            }
+
+            self.Components.Render(); // Replacement to base.Render(); since we can't access base from a patch
+            if (self.Sprite.CurrentAnimationID == "startStarFly")
+            {
+                float num = (float)self.Sprite.CurrentAnimationFrame / (float)self.Sprite.CurrentAnimationTotalFrames;
+                GFX.Game.GetAtlasSubtexturesAt("characters/player/startStarFlyWhite", self.Sprite.CurrentAnimationFrame).Draw(self.Sprite.RenderPosition, self.Sprite.Origin, self.starFlyColor * num, self.Sprite.Scale, self.Sprite.Rotation, SpriteEffects.None);
+            }
+
+            self.Sprite.Scale.X *= (float)self.Facing;
+            if (self.reflection.IsRendering && self.FlipInReflection)
+            {
+                self.Facing = (Facings)(0 - self.Facing);
+                self.Hair.Facing = self.Facing;
+            }
+        }
+
+        self.Sprite.RenderPosition = renderPosition;
     }
 }

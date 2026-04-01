@@ -19,6 +19,7 @@ public class MouseController : Entity
 {
     public MTexture birb;
     public PlacementController placement;
+    public Dictionary<uint, PlacementController> remotePlacements = new();
     public Level level;
     public Vector2 virtualCursorPos = new Vector2(1920 / 2, 1080 / 2);
     public Vector2? prevCursorPos = null;
@@ -30,6 +31,7 @@ public class MouseController : Entity
         set => _localVisible = value;
     }
     public List<uint> picked = new();
+    public List<uint> placed = new();
 
     public delegate void mouseClick(MouseController mouse);
     public static event mouseClick MouseClick;
@@ -55,9 +57,9 @@ public class MouseController : Entity
         //scene.Add(placement);
         //placement.Scene = scene; //idk fixes error
         //placement.HoldingIndex = 0;
-        await Task.Delay(5000);
-        if (placement != null)
-            placement.HoldingIndex = 1;
+        //await Task.Delay(5000);
+        //if (placement != null)
+        //    placement.HoldingIndex = 1;
     }
 
     public override void Render()
@@ -68,11 +70,16 @@ public class MouseController : Entity
             birb.DrawCentered(Position, Color.White, 1f);
 
         foreach (Ghost remotePlayer in Engine.Scene.Tracker.GetEntities<Ghost>())
-            if (manager.matchState != UMHManager.MatchStates.PickItems || !picked.Contains(remotePlayer.PlayerInfo.ID))
+        {
+            bool VisibleInState = (manager.matchState == UMHManager.MatchStates.PickItems && !picked.Contains(remotePlayer.PlayerInfo.ID)) ||
+                                  (manager.matchState == UMHManager.MatchStates.EditMode && !placed.Contains(remotePlayer.PlayerInfo.ID));
+
+            if (VisibleInState && manager.matchState != UMHManager.MatchStates.PlayMode)
             {
                 birb.DrawCentered(ToScreenspace(remotePlayer.Position), Color.Red, 1f);
                 remotePlayer.NameTag.Visible = true;
-            } else remotePlayer.NameTag.Visible = false;
+            } else remotePlayer.NameTag.Visible = manager.matchState == UMHManager.MatchStates.PlayMode;
+        }
     }
 
     bool wasClicking = false;
@@ -86,7 +93,7 @@ public class MouseController : Entity
         if (plr != null)
         {
             plr.Position = ToWorldspace(Position);
-            plr.StateMachine.State = 23;
+            plr.StateMachine.State = Player.StIntroMoonJump;
             plr.StateMachine.Locked = true;
             plr.level.CanRetry = false;
             plr.DummyGravity = false;
@@ -138,11 +145,10 @@ public class MouseController : Entity
         {
             if (mouse.placement.Place())
             {
-                Player plr = Engine.Scene.Tracker.GetEntity<Player>();
-                if (plr != null)
-                    mouse.SwitchToGameplay(plr);
+                mouse.localVisible = false;
                 mouse.placement.RemoveSelf();
                 mouse.placement = null;
+                mouse.manager.CheckForPlayMode();
             }
         }
     }
@@ -165,23 +171,25 @@ public class MouseController : Entity
         MouseClick -= Click;
     }
 
-    private void SwitchToGameplay(Player plr)
+    public void SwitchToGameplay(Player plr = null)
     {
-        if (plr != null)
-        {
-            plr.StateMachine.Locked = false;
-            plr.StateMachine.State = 0;
-            plr.level.CanRetry = true;
-            plr.DummyGravity = true;
-            plr.Speed = Vector2.Zero;
-            UMHSpawn spawn = Engine.Scene.Tracker.GetEntity<UMHSpawn>();
-            if (spawn != null)
-                plr.Position = spawn.Position;
-            plr.Visible = true;
-        }
+        if (plr == null)
+            plr = Engine.Scene.Tracker.GetEntity<Player>();
+        plr.StateMachine.Locked = false;
+        plr.StateMachine.State = Player.StNormal;
+        plr.level.CanRetry = true;
+        plr.DummyGravity = true;
+        plr.Speed = Vector2.Zero;
+        UMHSpawn spawn = Engine.Scene.Tracker.GetEntity<UMHSpawn>();
+        if (spawn != null)
+            plr.Position = spawn.Position;
+        plr.Visible = true;
 
         foreach (Ghost nplr in Engine.Scene.Tracker.GetEntities<Ghost>())
+        {
             nplr.Visible = true;
+            nplr.NameTag.Visible = true;
+        }
 
         this.Visible = false;
         this.Active = false;

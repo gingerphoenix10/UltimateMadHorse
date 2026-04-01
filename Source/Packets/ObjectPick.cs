@@ -1,4 +1,5 @@
-﻿using Celeste.Mod.CNetHelper.Data;
+﻿using Celeste.Mod.CelesteNet.Client.Entities;
+using Celeste.Mod.CNetHelper.Data;
 using Celeste.Mod.UMH.Entities;
 using Celeste.Mod.UMH.ObjectTypes;
 using Celeste.Mod.UMH.Triggers;
@@ -16,15 +17,15 @@ namespace Celeste.Mod.UMH.Packets;
 public class ObjectPick
 {
     public int setIndex { get; set; }
-    public int poolIndex { get; set; }
 
-    public ObjectPick(int setIndex, int poolIndex) {
+    public ObjectPick(int setIndex) {
         this.setIndex = setIndex;
-        this.poolIndex = poolIndex;
     }
 
     public static void Receive(PlayerData playerInfo, ObjectPick msg)
     {
+        if (!UMHManager.players.Contains(playerInfo.ID))
+            return;
         UMHManager manager = Engine.Scene.Tracker.GetEntity<UMHManager>();
         if (manager == null)
             return;
@@ -38,6 +39,28 @@ public class ObjectPick
         {
             manager.box.options[msg.setIndex].Value.Visible = false;
             manager.box.options[msg.setIndex].Value.RemoveSelf();
+
+            Ghost player = null;
+            foreach (Ghost ghost in Engine.Scene.Tracker.GetEntities<Ghost>())
+            {
+                if (ghost.PlayerInfo.ID == playerInfo.ID)
+                {
+                    player = ghost;
+                    break;
+                }
+            }
+            if (player == null)
+                return;
+
+            if (!manager.mouse.remotePlacements.ContainsKey(playerInfo.ID) || manager.mouse.remotePlacements[playerInfo.ID] == null)
+            {
+                manager.mouse.remotePlacements[playerInfo.ID] = new PlacementController(manager.mouse);
+                manager.mouse.remotePlacements[playerInfo.ID].HoldingIndex = manager.box.options[msg.setIndex].Key;
+                manager.mouse.remotePlacements[playerInfo.ID].remote = player;
+                Engine.Scene.Add(manager.mouse.remotePlacements[playerInfo.ID]);
+                Engine.Scene.Add(manager.mouse.remotePlacements[playerInfo.ID].holding);
+            }
+            else manager.mouse.remotePlacements[playerInfo.ID].HoldingIndex = manager.box.options[msg.setIndex].Key;
         }
     }
 }

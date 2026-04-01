@@ -21,6 +21,7 @@ public class UMHManager : Entity
     public MouseController mouse;
     public ItemsBox box;
     public int PoolIndex = 0;
+    public bool dead = false;
 
     public enum MatchStates
     {
@@ -132,6 +133,18 @@ public class UMHManager : Entity
             mouse.localVisible = true;
             mouse.picked.Clear();
             matchState = MatchStates.EditMode;
+        }
+    }
+
+    public void CheckForPlayMode()
+    {
+        if (matchState != MatchStates.EditMode)
+            return;
+        if (mouse.placed.Count == players.Count && !mouse.localVisible)
+        {
+            mouse.picked.Clear();
+            matchState = MatchStates.PlayMode;
+            mouse.SwitchToGameplay();
         }
     }
 }

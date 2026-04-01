@@ -1,4 +1,5 @@
-﻿using Celeste.Mod.CNetHelper;
+﻿using Celeste.Mod.CelesteNet.Client.Entities;
+using Celeste.Mod.CNetHelper;
 using Celeste.Mod.Entities;
 using Celeste.Mod.UMH.Packets;
 using Microsoft.Xna.Framework;
@@ -49,11 +50,13 @@ public class PlacementController : Entity
     }
 
     public MouseController mouse;
-    public PlacementController(MouseController mouse)
+    public Ghost remote = null;
+    public PlacementController(MouseController mouse, Ghost remotePlayer = null)
         : base(mouse.Position)
     {
         base.Collider = new Hitbox(8f, 8f);
         this.mouse = mouse;
+        this.remote = remotePlayer;
     }
 
     const int gridSize = 8;
@@ -64,6 +67,14 @@ public class PlacementController : Entity
             (float)Math.Floor(Position.Y / gridSize) * gridSize
         );
         Visible = mouse.localVisible;
+        if (remote != null)
+        {
+            Position = new Vector2(
+                (float)Math.Floor(remote.Position.X / gridSize) * gridSize,
+                (float)Math.Floor(remote.Position.Y / gridSize) * gridSize
+            );
+            Visible = mouse.manager.matchState == UMHManager.MatchStates.EditMode;
+        }
 
         if (holding == null)
         {
@@ -81,14 +92,30 @@ public class PlacementController : Entity
         holding.Visible = Visible;
     }
 
-    public bool Place()
+    public bool Place(Vector2? position = null)
     {
+        if (position != null)
+        {
+            this.Position = new Vector2(
+                (float)Math.Floor(((Vector2)(position)).X / gridSize) * gridSize,
+                (float)Math.Floor(((Vector2)(position)).Y / gridSize) * gridSize
+            );
+
+            Pools.pools[mouse.manager.PoolIndex][HoldingIndex].MoveTo(holding, new Vector2(
+                Position.X,
+                Position.Y
+            ));
+        }
+
         if (holding != null)
         {
             holding.Collidable = true;
-            var placemsg = new ObjectPlace(mouse.manager.PoolIndex, HoldingIndex, (int)Math.Floor(Position.X / gridSize) * gridSize, (int)Math.Floor(Position.Y / gridSize) * gridSize, UMHModule.currentMap, UMHModule.currentRoom);
-            CNetHelperModule.Send(placemsg, false);
-            Engine.Commands.Log(System.Text.Json.JsonSerializer.Serialize(placemsg));
+            if (remote == null)
+            {
+                var placemsg = new ObjectPlace((int)Math.Floor(Position.X / gridSize) * gridSize, (int)Math.Floor(Position.Y / gridSize) * gridSize);
+                CNetHelperModule.Send(placemsg, false);
+                Engine.Commands.Log(System.Text.Json.JsonSerializer.Serialize(placemsg));
+            }
         }
         else return false;
 

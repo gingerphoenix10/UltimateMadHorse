@@ -75,7 +75,7 @@ public class ItemsBox : Entity
             }
             else controller.placement.HoldingIndex = entityInfo.Key;
             controller.localVisible = false;
-            CNetHelperModule.Send(new ObjectPick(i, entityInfo.Key));
+            CNetHelperModule.Send(new ObjectPick(i));
             entityInfo.Value.Visible = false;
             entityInfo.Value.RemoveSelf();
             CelesteNetClientContext context = CelesteNetClientModule.Instance.Context;
