@@ -8,3 +8,5 @@
       Version: 2.4.2
     - Name: CoopHelper
       Version: 1.1.0
+    - Name: CNetHelper
+      Version: 1.0.0

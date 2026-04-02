@@ -217,7 +217,7 @@ public class UMHModule : EverestModule {
                 if (self.Top > ((float)self.SceneAs<Level>().Bounds.Bottom+4))
                 {
                     self.Visible = false;
-                    self.Ac = false;
+                    self.Active = false;
                     self.ForceCameraUpdate = false;
                     return;
                 }

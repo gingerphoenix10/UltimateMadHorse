@@ -10,3 +10,6 @@ entities.UMH/UMHSpawn.placements.name.default=Ultimate Mad Horse Spawn
 
 # Start Zone
 triggers.UMH/UMHStartZone.placements.name.default=Ultimate Mad Horse Start Zone
+
+# Goal
+triggers.UMH/UMHGoal.placements.name.default=Ultimate Mad Horse Goal

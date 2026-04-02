@@ -6,9 +6,7 @@ UMHSpawn.texture = "characters/player/sitDown00"
 UMHSpawn.placements = {
     {
         name = "default",
-        data = {
-			forceSettingTo = false,
-        }
+        data = {}
     }
 }
 

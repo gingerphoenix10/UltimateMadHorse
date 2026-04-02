@@ -20,15 +20,24 @@ public class FakeDeadBody : Entity
     public bool HasGolden;
 
     public Color initialHairColor;
-    public Vector2 bounce = Vector2.Zero;
-    public Player player;
-    public PlayerHair hair;
-    public PlayerSprite sprite;
-    public VertexLight light;
-    public DeathEffect deathEffect;
-    public Facings facing;
-    public float scale = 1f;
-    public bool finished;
+
+    public Vector2 bounce = Vector2.Zero;
+
+    public Player player;
+
+    public PlayerHair hair;
+
+    public PlayerSprite sprite;
+
+    public VertexLight light;
+
+    public DeathEffect deathEffect;
+
+    public Facings facing;
+
+    public float scale = 1f;
+
+    public bool finished;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public FakeDeadBody(Player player, Vector2 direction)
@@ -96,7 +105,7 @@ public class FakeDeadBody : Entity
         Vector2 speed = player.Speed;
         player.StateMachine.state = 11;
         player.StateMachine.Locked = true;
-        player.DummyFriction = false;
+        player.DummyFriction = player.onGround;
         player.Speed = speed;
         Level level = SceneAs<Level>();
         if (bounce != Vector2.Zero)
